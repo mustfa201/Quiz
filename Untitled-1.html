@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Our Quiz Game ❤️</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg1:#ff9a9e; --bg2:#fad0c4; --primary:#ff4d6d; --primary-dark:#e63950; --card:#fff; --text:#333;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      background:linear-gradient(135deg,var(--bg1),var(--bg2));
+      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; color:#fff;
+    }
+    .app{
+      width:100%; max-width:780px; background:rgba(255,255,255,.15); backdrop-filter: blur(8px);
+      border-radius:24px; padding:28px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25);
+    }
+    h1{margin:0 0 6px; font-weight:800}
+    .sub{opacity:.9; margin:0 0 18px}
+    .card{
+      background:var(--card); color:var(--text); border-radius:20px; padding:22px; box-shadow:0 8px 24px rgba(0,0,0,.15);
+      margin-top:14px;
+    }
+    .progress-wrap{display:flex; align-items:center; gap:12px; margin:8px 0 18px}
+    .progress{
+      flex:1; height:10px; background:#ffd1da; border-radius:999px; overflow:hidden;
+    }
+    .bar{height:100%; width:0%; background:var(--primary); transition:width .35s ease}
+    .counter{font-weight:700}
+    .q{font-size:20px; font-weight:700; margin-bottom:14px}
+    .options{display:grid; gap:10px}
+    .btn{
+      background:#fff; border:2px solid #ffe2e8; color:var(--text); padding:12px 14px; border-radius:12px; text-align:left; cursor:pointer;
+      transition:.2s ease; font-weight:600;
+    }
+    .btn:hover{transform:translateY(-1px); border-color:#ffc0cc}
+    .btn.correct{background:#e8ffe9; border-color:#a6ecb2}
+    .btn.wrong{background:#ffe8ec; border-color:#ffb0c0}
+    .feedback{min-height:28px; margin-top:10px; font-weight:600}
+    .row{display:flex; gap:10px; margin-top:14px}
+    .pill{
+      background:var(--primary); color:#fff; border:none; padding:12px 16px; border-radius:999px; cursor:pointer; font-weight:700;
+      box-shadow:0 8px 20px rgba(255,77,109,.35);
+    }
+    .pill:disabled{opacity:.5; cursor:not-allowed}
+    .center{text-align:center}
+    .result h2{margin:8px 0}
+    .small{opacity:.8}
+    .hidden{display:none}
+    .badge{display:inline-block; padding:6px 10px; border-radius:999px; background:#fff; color:var(--primary); font-weight:800; margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <h1>💖 A Little Quiz</h1>
+    <p class="sub">Answer the questions...ilysm</p>
+
+    <div class="progress-wrap">
+      <div class="progress"><div class="bar" id="bar"></div></div>
+      <div class="counter" id="counter">1 / 30</div>
+    </div>
+
+    <div class="card" id="game">
+      <div class="q" id="question">Loading…</div>
+      <div class="options" id="options"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="row">
+        <button class="pill" id="nextBtn" disabled>Next ▶</button>
+      </div>
+    </div>
+
+    <div class="card center result hidden" id="result">
+      <h2>🎉 Done!</h2>
+      <p id="scoreLine"></p>
+      <p class="small" id="message"></p>
+      <div class="badge" id="best">Best: 0</div>
+      <div class="row" style="justify-content:center; margin-top:18px">
+        <button class="pill" id="againBtn">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ======== QUESTIONS ========
+    // For multiple correct answers: use answers:[indexes]
+    // For single correct: use answer:index
+    const QUESTIONS = [
+      { q:"Where did we first talk?", options:["Random GC","Facebook","WhatsApp","Snapchat"], answer:0, correctMsg:"U always stood out to me…even in that GC", wrongMsg:"How tf do you not know this" },
+      { q:"What nickname do I use for you the most?", options:["Baby Owl","Strawberry","Caterpillar","Makima"], answer:0, correctMsg:"I love calling you my baby sooo baby owl it issssss 🦉💖", wrongMsg:"You’re yummy like a strawberry, cute like a caterpillar and powerful like Makima" },
+      { q:"Which city would we love to visit together first?", options:["Istanbul","Tokyo","Dubai","Swat"], answer:1, correctMsg:"Wottttt, I wanna see you wearing a Kimono 💐", wrongMsg:"Tempting… but we going to Japan for our Honeymoon" },
+      { q:"My Favorite Food?", options:["Pizza","Beef Burger","Shawarma","Biryani"], answer:0, correctMsg:"I am a pizza sniffer", wrongMsg:"Hmmmm….But Pizza is just>>>" },
+      { q:"If we watch an anime together, what would I prefer?", options:["Re-watching Bleach","Rom-com Anime","Gintama","Studio Ghibli Movies"], answers:[0,1,2,3], correctMsg:"Honestly I’d love watching anything with you as long as we cuddle and watch it", wrongMsg:"All options are correct for this one" },
+      { q:"Who said 'I love you' first?", options:["Me","You"], answer:0, correctMsg:"I still remember when I said it for the very first time", wrongMsg:"It was me—and I meant it!" },
+      { q:"What’s my favorite thing about you?", options:["Your Eyes","Your Personality","Your Curves","Your deyaluness"], answer:1, correctMsg:"I fell in love with your Personality", wrongMsg:"Yeah but like your sweet personality is just>>>" },
+      { q:"Which dessert would I bring you?", options:["Brownies","Cheesecake","Donuts","Ice cream"], answers:[0,1,2,3], correctMsg:"All options are correct!", wrongMsg:"All options are correct!" },
+      { q:"What was the most yummiest moment in our journey?", options:["The Night","The call","The meetup"], answer:1, correctMsg:"For me the call was the most yummiest", wrongMsg:"Hmmm that was nice but like THE call was just >>>" },
+      { q:"How do I show love most?", options:["Nudes","Late night Calls","Acts of service","Paragraphs"], answer:3, correctMsg:"I love writing those paragraphs for youuuu", wrongMsg:"I always try to show you my love and dedication" },
+      { q:"Our ideal chill plan?", options:["Walk + talk","Movie night","Gaming","Cuddling and snuggling"], answer:3, correctMsg:"I mean like whats better than cuddling with my baby", wrongMsg:"CUDDLESSSSSS" },
+  { q:"Which pet name do you use the most for me?", options:["Stinky Rat","M4Stinkeen","Orange smol","Ratatouille"], answer:0, correctMsg:"Your Stinky Rat reporting 😤💕", wrongMsg:"It’s ‘Stinky Rat’ (I accept my fate)." },
+  { q:"First thing I notice about you?", options:["Personality","Eyes","Voice","Kind heart"], answer:0, correctMsg:"You always stood out with your unique personality", wrongMsg:"All are true" },
+  { q:"What word I can not pronounce?", options:["Vocabulary","Entrepreneurship","Alarm","Darakht"], answer:0, correctMsg:"Yk I really just can’t say Vocabulary", wrongMsg:"Yeah but like I just can’t say Vocabulary" },
+  { q:"Can you unstink me?", options:["Yes","No"], answer:0, correctMsg:"Ofc like you gotta unstoink me", wrongMsg:"WDYM NO!!???" },
+  { q:"If I plan a surprise, it’s likely…", options:["A meetup","Letter","Presentation","I’m really bad at keeping suprises"], answer:3, correctMsg:"Wotttt…I just get really really excited to tell youu", wrongMsg:"I do tryyyyy" },
+  { q:"Who loves the other the most?", options:["Me","You"], answer:1, correctMsg:"There is no doubt that you love me moree", wrongMsg:"I can never compare to you babe" },
+  { q:"If we ever get into a hand to hand fight , who would win?", options:["Me","You"], answer:1, correctMsg:"Obv it’s you and your 19.5 inches", wrongMsg:"I can’t beat you and your 19.5" },
+  { q:"Will you marry me?", options:["Yes","No"], answer:0, correctMsg:"You gonna be my Mrs.Mustfa", wrongMsg:"Su …we getting married" },
+  { q:"If I was an animal, which animal would I be?", options:["A stinky rat","An orange kitten","A rabbit"], answer:0, correctMsg:"I’ll just be a stinky rat in the water pipes", wrongMsg:"PipeCity" },
+  { q:"Perfect date?", options:["Sunset walk","Stargazing","Shopping mall","Cooking together"], answer:1, correctMsg:"Stargazing with my stardevi", wrongMsg:"Whats better than stargazing?" },
+  { q:"Who do u think can run faster?", options:["Me","You"], answer:1, correctMsg:"I mean those small legs do run fast", wrongMsg:"Long legs but no swiftness" },
+  { q:"What’s our “Couple Song”?", options:["We fell in love in october","Love Story","Lost in the fire","Melting"], answer:1, correctMsg:"Love Story just hits different", wrongMsg:"Nice choice but like love story is just us" },
+  { q:"Will you kiss me?", options:["Yes","No"], answer:0, correctMsg:"Uwaaaaa yessssssssss", wrongMsg:"WDYM NO!!???" },
+  { q:"What would you benefit the most from my body?", options:["Endless cuddles","Selling organs and peenar","Personal slave","Breeding purposes only"], answer:0, correctMsg:"Hmmm like the other are tempting…but cuddles >>>", wrongMsg:"Tempting….but cuddles are wayyy betterrr" },
+  { q:"What’s our long-distance superpower?", options:["Patience","Creativity","You","Communication"], answer:2, correctMsg:"You alone keep us strong 🔒", wrongMsg:"It’s always you " },
+  { q:"Which emoji feels like us?", options:["🍓🍊","💍🐛","🐛🦋","🌙💫"], answer:0, correctMsg:"Baby Owl forever 🦉", wrongMsg:"It’s the owl for me!" },
+  { q:"If you could give me something now:", options:["Hug","Slaps","Kisses"], answer:1, correctMsg:"I really need those slaps", wrongMsg:"Huhhhhhhh and u don’t wanna slap me??" },
+  { q:"Do you think we can make it?", options:["Nah","Yessss","My family won’t agree","Smth will happen"], answer:1, correctMsg:"We are gonna make it …no matter what", wrongMsg:"FK NO!!!! WE GETTING MARRIED" },
+      { q:"If you got the choice to try one :", options:["Crab","Octopus","Fried chicken with a lot of sauce"], answers:[0,1,2], correctMsg:"Yummy Choice", wrongMsg:"Yummy Choice" }
+    ];
+
+    // ======== QUIZ LOGIC ========
+    const shuffled = QUESTIONS.sort(() => Math.random() - 0.5);
+    let i = 0, score = 0, locked = false;
+
+    const qEl = document.getElementById("question");
+    const optsEl = document.getElementById("options");
+    const feedbackEl = document.getElementById("feedback");
+    const nextBtn = document.getElementById("nextBtn");
+    const bar = document.getElementById("bar");
+    const counter = document.getElementById("counter");
+    const resCard = document.getElementById("result");
+    const gameCard = document.getElementById("game");
+    const scoreLine = document.getElementById("scoreLine");
+    const msg = document.getElementById("message");
+    const againBtn = document.getElementById("againBtn");
+    const bestBadge = document.getElementById("best");
+
+    function render() {
+      const total = shuffled.length;
+      const curr = shuffled[i];
+      counter.textContent = `${i+1} / ${total}`;
+      bar.style.width = `${(i/total)*100}%`;
+      qEl.textContent = curr.q;
+      feedbackEl.textContent = "";
+      nextBtn.disabled = true;
+      locked = false;
+
+      optsEl.innerHTML = "";
+      curr.options.forEach((opt, idx) => {
+        const b = document.createElement("button");
+        b.className = "btn";
+        b.textContent = opt;
+        b.onclick = () => choose(idx);
+        optsEl.appendChild(b);
+      });
+    }
+
+    function choose(idx) {
+      if (locked) return;
+      locked = true;
+
+      const curr = shuffled[i];
+      const buttons = [...document.querySelectorAll(".btn")];
+
+      let correctIndexes = [];
+      if (typeof curr.answer === "number") correctIndexes = [curr.answer];
+      if (Array.isArray(curr.answers)) correctIndexes = curr.answers;
+
+      buttons.forEach((b, k) => {
+        if (correctIndexes.includes(k)) b.classList.add("correct");
+        else if (k === idx) b.classList.add("wrong");
+        b.disabled = true;
+      });
+
+      if (correctIndexes.includes(idx)) {
+        score++;
+        feedbackEl.textContent = curr.correctMsg || "Correct! 💖";
+      } else {
+        feedbackEl.textContent = curr.wrongMsg || "Hehe not quite, but I still love you ❤️";
+      }
+      nextBtn.disabled = false;
+    }
+
+    nextBtn.addEventListener("click", () => {
+      i++;
+      if (i < shuffled.length) render();
+      else finish();
+    });
+
+    function finish() {
+      bar.style.width = "100%";
+      gameCard.classList.add("hidden");
+      resCard.classList.remove("hidden");
+
+      const total = shuffled.length;
+      const pct = Math.round((score/total)*100);
+      scoreLine.textContent = `You scored ${score} / ${total} (${pct}%).`;
+      msg.textContent = pct >= 80
+        ? "You Did A Really Good job Baby Owl"
+        : pct >= 50
+          ? "I Love You A Lot. 💕"
+          : "Scores don’t matter. Love does. Let’s make more memories, and maybe some babies 🫶";
+
+      const key = "ourQuizHighScore";
+      const best = Math.max(+localStorage.getItem(key)||0, score);
+      localStorage.setItem(key, best);
+      bestBadge.textContent = `Best: ${best}`;
+      confetti();
+    }
+
+    againBtn.addEventListener("click", () => location.reload());
+
+    function confetti() {
+      const N = 80;
+      for (let k=0;k<N;k++){
+        const s = document.createElement("span");
+        s.textContent = ["💖","✨","💘","💞"][Math.floor(Math.random()*4)];
+        s.style.position="fixed";
+        s.style.left = Math.random()*100+"vw";
+        s.style.top = "-10vh";
+        s.style.fontSize = (16+Math.random()*18)+"px";
+        s.style.pointerEvents="none";
+        s.style.transition = "transform 2.2s ease, opacity 2.2s ease";
+        document.body.appendChild(s);
+        requestAnimationFrame(()=>{
+          s.style.transform = `translateY(${110+Math.random()*20}vh) rotate(${(Math.random()*360)}deg)`;
+          s.style.opacity = 0;
+        });
+        setTimeout(()=>s.remove(),2300+Math.random()*400);
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
